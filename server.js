@@ -36,6 +36,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Required Guild and Role
 const requiredGuildID = "1332703535980089425";
 const requiredRoleID = "1332703655274483763";
 
@@ -45,29 +46,39 @@ app.get(
   "/callback",
   passport.authenticate("discord", { failureRedirect: "/" }),
   (req, res) => {
-    // After successful authentication, you can get the user roles
-    const user = req.user;
+    try {
+      // After successful authentication, you can get the user roles
+      const user = req.user;
 
-    // Check if the user is a member of the required guild
-    const guild = user.guilds.find((g) => g.id === requiredGuildID);
-    if (!guild || !guild.roles.includes(requiredRoleID)) {
-      return res.send("You don't have the required role!");
+      // Check if the user is a member of the required guild
+      const guild = user.guilds.find((g) => g.id === requiredGuildID);
+      if (!guild || !guild.roles.includes(requiredRoleID)) {
+        return res.send("You don't have the required role!");
+      }
+
+      // If the user has the required role, redirect to the dashboard
+      res.redirect("/dashboard");
+    } catch (err) {
+      console.error("Error during callback:", err);
+      res.status(500).send("Internal Server Error");
     }
-
-    // If the user has the required role, redirect to the dashboard
-    res.redirect("/dashboard");
   }
 );
 
 app.get("/check-role", (req, res) => {
-  if (!req.isAuthenticated()) return res.redirect("/");
+  try {
+    if (!req.isAuthenticated()) return res.redirect("/");
 
-  const guild = req.user.guilds.find((g) => g.id === requiredGuildID);
-  if (!guild || !guild.roles.includes(requiredRoleID)) {
-    return res.send("You don't have the required role!");
+    const guild = req.user.guilds.find((g) => g.id === requiredGuildID);
+    if (!guild || !guild.roles.includes(requiredRoleID)) {
+      return res.send("You don't have the required role!");
+    }
+
+    res.send("Welcome to the dashboard!");
+  } catch (err) {
+    console.error("Error during role check:", err);
+    res.status(500).send("Internal Server Error");
   }
-
-  res.send("Welcome to the dashboard!");
 });
 
 app.get("/", (req, res) => res.send("Home Page"));
@@ -76,6 +87,12 @@ app.get("/logout", (req, res) => {
     if (err) console.error(err);
     res.redirect("/");
   });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).send("Internal Server Error");
 });
 
 module.exports = app;
