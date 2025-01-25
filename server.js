@@ -42,23 +42,22 @@ const requiredRoleID = "1332703655274483763";
 // Routes
 app.get("/login", passport.authenticate("discord"));
 app.get(
-    "/callback",
-    passport.authenticate("discord", { failureRedirect: "/" }),
-    (req, res) => {
-      // After successful authentication, you can get the user roles
-      const user = req.user;
-  
-      // Check if the user is a member of the required guild
-      const guild = user.guilds.find((g) => g.id === requiredGuildID);
-      if (!guild || !guild.roles.includes(requiredRoleID)) {
-        return res.send("You don't have the required role!");
-      }
-  
-      // If the user has the required role, redirect to the dashboard
-      res.redirect("/dashboard");
+  "/callback",
+  passport.authenticate("discord", { failureRedirect: "/" }),
+  (req, res) => {
+    // After successful authentication, you can get the user roles
+    const user = req.user;
+
+    // Check if the user is a member of the required guild
+    const guild = user.guilds.find((g) => g.id === requiredGuildID);
+    if (!guild || !guild.roles.includes(requiredRoleID)) {
+      return res.send("You don't have the required role!");
     }
-  );
-  
+
+    // If the user has the required role, redirect to the dashboard
+    res.redirect("/dashboard");
+  }
+);
 
 app.get("/check-role", (req, res) => {
   if (!req.isAuthenticated()) return res.redirect("/");
@@ -79,9 +78,4 @@ app.get("/logout", (req, res) => {
   });
 });
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-
-console.log(process.env.DISCORD_CLIENT_ID); // Should print your Discord Client ID
-console.log(process.env.DISCORD_CLIENT_SECRET); // Should print your Discord Client Secret (if loaded correctly)
-console.log(process.env.DISCORD_REDIRECT_URI); // Should print your Redirect URI
+module.exports = app;
