@@ -42,28 +42,54 @@ const requiredRoleID = "1332703655274483763";
 
 // Routes
 app.get("/login", passport.authenticate("discord"));
+const axios = require("axios");
+
 app.get(
   "/callback",
   passport.authenticate("discord", { failureRedirect: "/" }),
-  (req, res) => {
+  async (req, res) => {
     try {
-      // After successful authentication, you can get the user roles
       const user = req.user;
+      console.log("User Data:", user);
 
-      // Check if the user is a member of the required guild
-      const guild = user.guilds.find((g) => g.id === requiredGuildID);
-      if (!guild || !guild.roles.includes(requiredRoleID)) {
-        return res.send("You don't have the required role!");
+      if (!user || !user.guilds) {
+        console.error("User data is undefined or missing guilds.");
+        return res.status(500).send("Authentication failed. No user data.");
       }
 
-      // If the user has the required role, redirect to the dashboard
+      // Check if user is in the required guild
+      const guild = user.guilds.find((g) => g.id === requiredGuildID);
+      if (!guild) {
+        console.error("User is not in the required guild.");
+        return res.status(403).send("You must be in the required Discord server.");
+      }
+
+      // 🔴 Fetch member details from Discord API to get roles 🔴
+      const response = await axios.get(
+        `https://discord.com/api/v10/users/@me/guilds/${requiredGuildID}/member`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        }
+      );
+
+      const memberData = response.data;
+      console.log("Member Data:", memberData);
+
+      if (!memberData.roles.includes(requiredRoleID)) {
+        console.error("User does not have the required role.");
+        return res.status(403).send("You don't have the required role!");
+      }
+
       res.redirect("/dashboard");
-    } catch (err) {
-      console.error("Error during callback:", err);
+    } catch (error) {
+      console.error("Error during callback:", error.response?.data || error.message);
       res.status(500).send("Internal Server Error");
     }
   }
 );
+
 
 app.get("/check-role", (req, res) => {
   try {
